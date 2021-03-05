@@ -1,0 +1,152 @@
+plugins {
+    id 'java-library'
+    id 'checkstyle'
+    id 'pmd'
+    id 'com.github.spotbugs' version "$spotbugsVersion"
+    id 'jacoco'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group 'io.github.ricall.junit5-sftp'
+version '1.0.0'
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.apache.sshd:sshd-core:$sshdVersion"
+    implementation "org.apache.sshd:sshd-sftp:$sshdVersion"
+    implementation "com.github.marschall:memoryfilesystem:$memoryfilesystemVersion"
+    implementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
+
+    testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+    testImplementation "com.jcraft:jsch:$jschVersion"
+    testImplementation "commons-io:commons-io:$commonsIoVersion"
+    testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+checkstyle {
+    configProperties += [
+        cacheFile: file('build/checkstyleCache'),
+        suppressFile: file('config/checkstyle/supressions.xml'),
+        headerFile: file('config/checkstyle/javaHeader.txt'),
+    ]
+}
+
+pmdMain {
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/main-ruleset.xml")
+}
+
+pmdTest {
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/test-ruleset.xml")
+}
+
+tasks.matching { it.name.startsWith('spotbugs')}*.reports {
+    html.enabled = true
+}
+
+jacocoTestReport {
+    finalizedBy jacocoTestCoverageVerification
+    reports {
+        html.destination file("$reportsDir/coverage")
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                minimum = 0.5
+            }
+            limit {
+                counter = 'BRANCH'
+                minimum = 0.5
+            }
+        }
+    }
+}
+check.dependsOn jacocoTestReport
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+tasks.withType(Javadoc) {
+    failOnError false
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption('encoding', 'UTF-8')
+    options.addStringOption('charSet', 'UTF-8')
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                name = 'JUnit 5 SFTP Extension'
+                description = '''\
+                    A JUnit 5 extension library that allows you to fake a SFTP server.
+                    '''.stripIndent()
+                url = 'https://github.com/ricall/junit5-sftp'
+                licenses {
+                    license {
+                        name = 'MIT'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'ricall'
+                        name = 'Richard Allwood'
+                        email = 'richard.m.allwood@gmail.com'
+                        timezone = '+10'
+                    }
+                }
+                scm {
+                    connection = 'git@github.com:ricall/junit5-sftp.git'
+                    developerConnection = 'git@github.com:ricall/junit5-sftp.git'
+                    url = 'https://github.com/ricall/junit5-sftp'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username deployUsername
+                password deployPassword
+            }
+        }
+    }
+}
+
+signing {
+    useGpgCmd()
+    sign publishing.publications.mavenJava
+}
+
+task install(dependsOn: [build, publishToMavenLocal]) {
+    group 'Publishing'
+    description 'Installs artifacts to local Maven repository'
+}
+
+task release(dependsOn: [build, publish]) {
+    group 'Publishing'
+    description 'Builds everything for the release.'
+}
