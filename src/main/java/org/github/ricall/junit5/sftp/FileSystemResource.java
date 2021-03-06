@@ -23,15 +23,33 @@
 
 package org.github.ricall.junit5.sftp;
 
+import org.github.ricall.junit5.sftp.implementation.DefaultFileSystemResourceBuilder;
+
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 
-public interface SftpEmbeddedServer {
+public interface FileSystemResource {
 
-    void addResources(List<FileSystemResource> resource);
+    String getDestination();
 
-    void resetFileSystem();
+    InputStream getInputStream();
 
-    Path pathFor(String filename, String... more);
+    static FileSystemResourceBuilder resourceAt(String destination) {
+        return new DefaultFileSystemResourceBuilder(destination);
+    }
+
+    interface FileSystemResourceBuilder {
+
+        List<FileSystemResource> withText(String text);
+
+        List<FileSystemResource> withContent(Supplier<InputStream> streamSupplier);
+
+        List<FileSystemResource> fromClasspathResource(String classpathResource);
+
+        List<FileSystemResource> fromPath(Path path);
+
+    }
 
 }

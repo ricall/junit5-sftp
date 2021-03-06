@@ -23,8 +23,8 @@
 
 package org.github.ricall.junit5.sftp;
 
-import org.github.ricall.junit5.sftp.implementation.SftpEmbeddedServerImpl;
-import org.github.ricall.junit5.sftp.implementation.SftpMutableServerConfiguration;
+import org.github.ricall.junit5.sftp.implementation.DefaultSftpEmbeddedServer;
+import org.github.ricall.junit5.sftp.implementation.DefaultSftpServerConfiguration;
 import org.junit.jupiter.api.extension.*;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.util.ReflectionUtils;
@@ -38,21 +38,21 @@ import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversal
 
 public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEachCallback, AfterAllCallback, ParameterResolver {
     public static final String NAMESPACE = SftpEmbeddedServer.class.getName();
-    public static final String SERVER_KEY = SftpEmbeddedServerImpl.class.getName();
+    public static final String SERVER_KEY = DefaultSftpEmbeddedServer.class.getName();
 
     @Override
     public void beforeEach(final ExtensionContext context) {
         if (getServer(context) == null) {
-            final SftpEmbeddedServerImpl server = new SftpEmbeddedServerImpl(getConfigurationWithDefault(context));
+            final DefaultSftpEmbeddedServer server = new DefaultSftpEmbeddedServer(getConfigurationWithDefault(context));
             context.getRoot().getStore(Namespace.create(NAMESPACE))
                     .put(SERVER_KEY, server);
             server.startServer();
         }
     }
 
-    private SftpEmbeddedServerImpl getServer(final ExtensionContext context) {
+    private DefaultSftpEmbeddedServer getServer(final ExtensionContext context) {
         return context.getRoot().getStore(Namespace.create(NAMESPACE))
-                .get(SERVER_KEY, SftpEmbeddedServerImpl.class);
+                .get(SERVER_KEY, DefaultSftpEmbeddedServer.class);
     }
 
     @Override
@@ -68,13 +68,13 @@ public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEac
                 .remove(SERVER_KEY);
     }
 
-    private SftpMutableServerConfiguration getConfigurationWithDefault(final ExtensionContext context) {
+    private DefaultSftpServerConfiguration getConfigurationWithDefault(final ExtensionContext context) {
         return context.getTestInstance()
                 .flatMap(this::getConfiguration)
-                .orElse(SftpMutableServerConfiguration.configuration());
+                .orElse(DefaultSftpServerConfiguration.configuration());
     }
 
-    private Optional<SftpMutableServerConfiguration> getConfiguration(final Object instance) {
+    private Optional<DefaultSftpServerConfiguration> getConfiguration(final Object instance) {
         return ReflectionUtils.findFields(instance.getClass(), this::isSftpConfiguration, TOP_DOWN).stream()
                 .map(field -> getConfigurationFromField(field, instance))
                 .filter(Objects::nonNull)
@@ -85,9 +85,9 @@ public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEac
         return field.getType() == SftpServerConfiguration.class;
     }
 
-    private SftpMutableServerConfiguration getConfigurationFromField(final Field field, final Object testInstance) {
+    private DefaultSftpServerConfiguration getConfigurationFromField(final Field field, final Object testInstance) {
         try {
-            return (SftpMutableServerConfiguration) field.get(testInstance);
+            return (DefaultSftpServerConfiguration) field.get(testInstance);
         } catch (IllegalAccessException iae) {
             throw new IllegalArgumentException("Unable to access field " + field.getName(), iae);
         }

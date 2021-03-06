@@ -103,6 +103,7 @@ public final class ReusableFileSystem extends FileSystem {
 
     public static FileSystemFactory fileSystemFactory(final FileSystem fileSystem) {
         return new FileSystemFactory() {
+
             @Override
             public Path getUserHomeDir(final SessionContext session) {
                 return new MockPath("/home/sftp");
@@ -112,6 +113,7 @@ public final class ReusableFileSystem extends FileSystem {
             public FileSystem createFileSystem(final SessionContext session) {
                 return new ReusableFileSystem(fileSystem);
             }
+
         };
     }
 }

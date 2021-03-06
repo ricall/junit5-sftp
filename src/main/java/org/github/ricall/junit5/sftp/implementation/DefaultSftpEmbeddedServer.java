@@ -27,36 +27,31 @@ import com.github.marschall.memoryfilesystem.MemoryFileSystemBuilder;
 import com.github.marschall.memoryfilesystem.StringTransformers;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
+import org.github.ricall.junit5.sftp.FileSystemResource;
 import org.github.ricall.junit5.sftp.SftpEmbeddedServer;
 import org.github.ricall.junit5.sftp.SftpServerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_PASSWORD;
 import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_USERNAME;
 
-public final class SftpEmbeddedServerImpl implements SftpEmbeddedServer {
+public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SftpEmbeddedServerImpl.class);
     private static final String PATH_SEPARATOR = "/";
     private static final String SFTP_USER_AND_GROUP = "sftp";
     private static final String HOME_DIRECTORY = "/home/sftp";
 
-    private transient final SftpMutableServerConfiguration configuration;
+    private transient final DefaultSftpServerConfiguration configuration;
     private transient FileSystem fileSystem;
     private transient SshServer server;
 
-    public SftpEmbeddedServerImpl(final SftpMutableServerConfiguration configuration) {
+    public DefaultSftpEmbeddedServer(final DefaultSftpServerConfiguration configuration) {
         this.configuration = configuration;
         if (configuration.getUsers().isEmpty()) {
             configuration.getUsers().put(DEFAULT_USERNAME, DEFAULT_PASSWORD);
@@ -72,7 +67,7 @@ public final class SftpEmbeddedServerImpl implements SftpEmbeddedServer {
         server.setPasswordAuthenticator(configuration);
         server.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
         server.setFileSystemFactory(ReusableFileSystem.fileSystemFactory(fileSystem));
-        prepareFileSystem();
+        addResources(configuration.getResources());
 
         try {
             server.start();
@@ -100,55 +95,28 @@ public final class SftpEmbeddedServerImpl implements SftpEmbeddedServer {
         }
     }
 
-    private void prepareFileSystem() {
-        configuration.getResources().entrySet().forEach(entry -> addResources(entry.getKey(), entry.getValue()));
-    }
-
     @Override
-    public void addResources(final String path, final String... resources) {
-        Arrays.stream(resources).forEach(resource -> {
-            LOGGER.info("Add Resource {}/{}", path, resource);
-            final Stream<Path> files = Optional.ofNullable(getClass().getResource(PATH_SEPARATOR + resource))
-                    .map(URL::getPath)
-                    .map(Paths::get)
-                    .map(this::filesFrom)
-                    .orElse(Stream.empty());
+    public void addResources(final List<FileSystemResource> resources) {
+        resources.forEach(resource -> {
+            final Path destination = fileSystem.getPath(resource.getDestination());
+            ensurePathExists(destination);
 
-            files.forEach(child -> {
-                try {
-                    if (Files.isDirectory(child)) {
-                        final String newPath = String.format("%s/%s", path, child.getFileName());
-                        addResources(newPath, Files.list(child)
-                                .map(Path::getFileName)
-                                .map(Object::toString)
-                                .toArray(String[]::new));
-                    } else {
-                        addFile(path, child);
-                    }
-                } catch (IOException e) {
-                    throw new SftpServerException("Failed to add resources", e);
-                }
-            });
+            try {
+                Files.copy(resource.getInputStream(), destination);
+            } catch (IOException e) {
+                throw new SftpServerException("Failed to copy " + resource + " to FileSystem", e);
+            }
         });
     }
 
-    public void addFile(final String path, final Path source) {
-        final Path destinationPath = fileSystem.getPath(path, Optional.ofNullable(source)
-            .map(Path::getFileName)
-            .map(Object::toString)
-            .orElse(""));
+    private void ensurePathExists(final Path path) {
         try {
-            ensurePathExists(destinationPath);
-            Files.copy(Files.newInputStream(source), destinationPath);
+            final Path parent = path.getParent();
+            if (parent != null && !parent.equals(path.getRoot())) {
+                Files.createDirectories(parent);
+            }
         } catch (IOException e) {
-            throw new SftpServerException("Failed to copy file " + source + " --> " + destinationPath, e);
-        }
-    }
-
-    private void ensurePathExists(final Path path) throws IOException {
-        final Path parent = path.getParent();
-        if (parent != null && !parent.equals(path.getRoot())) {
-            Files.createDirectories(parent);
+            throw new SftpServerException("Failed to create folder " + path, e);
         }
     }
 
@@ -158,7 +126,7 @@ public final class SftpEmbeddedServerImpl implements SftpEmbeddedServer {
             fileSystem.close();
             fileSystem = createFileSystem();
             server.setFileSystemFactory(ReusableFileSystem.fileSystemFactory(fileSystem));
-            prepareFileSystem();
+            addResources(configuration.getResources());
         } catch (IOException e) {
             throw new SftpServerException("Failed to close FileSystem", e);
         }
@@ -167,18 +135,6 @@ public final class SftpEmbeddedServerImpl implements SftpEmbeddedServer {
     @Override
     public Path pathFor(final String filename, final String... more) {
         return fileSystem.getPath(filename, more);
-    }
-
-    private Stream<Path> filesFrom(final Path path) {
-        if (Files.isDirectory(path)) {
-            try {
-                return Files.list(path);
-            } catch (IOException e) {
-                LOGGER.error("failed to list files for {}", path, e);
-                return Stream.empty();
-            }
-        }
-        return Stream.of(path);
     }
 
     public void stopServer() {

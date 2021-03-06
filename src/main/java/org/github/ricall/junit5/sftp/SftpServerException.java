@@ -27,6 +27,10 @@ public class SftpServerException extends RuntimeException {
 
     public static final long serialVersionUID = -3284324234L;
 
+    public SftpServerException(final String message) {
+        this(message, null);
+    }
+
     public SftpServerException(final String message, final Throwable cause) {
         super(message, cause);
     }

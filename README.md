@@ -13,7 +13,7 @@ testImplementation 'io.github.ricall.junit5-sftp:junit5-sftp:1.0.0'
 ```
 
 ### Maven
-Add the dependeny to mvn pom.xml
+Add the dependency to mvn pom.xml
 ```xml
 <dependency>
     <groupId>io.github.ricall.junit5-sftp</groupId>
@@ -23,22 +23,67 @@ Add the dependeny to mvn pom.xml
 </dependency>
 ```
 
-### Using the `JUnit5` extension
+## Using the `JUnit5` extension
 ```java
 @ExtendWith(SftpEmbeddedServerExtension.class)
 public class TestSftpEmbeddedServer {
-
+    
     public final SftpServerConfiguration configuration = SftpServerConfiguration.configuration()
             .withPort(1234)
             .withUser("username", "password")
-            .withResources("/tmp/data", "data");
+            .withResources(resourceAt("/tmp/source-data").fromClasspathResource("/test/data"));
 
     @Test
-    public void verifyWeCanWriteTextFile(final SftpEmbeddedServer server) {
+    public void verifySftpFilesCanBeDownloaded(final SftpEmbeddedServer server) {
         // sftp server is running on sftp://username:password@localhost:1234
+        // The files and directories from the test.data package are copied to /tmp/source-data
+        // for every test
     }
     
 }
 ```
+
+The FTP server uses an in-memory FileSystem to manage files, between tests the file system is recreated so that
+tests do not impact each other.
+
+## Using the `FileSystemResource` abstraction.
+`@SftpEmbeddableServerExtension` provides a powerful `FileSystemResource` abstraction that allows you to populate
+the in-memory FileSystem with files/folders in a simple easy to use fashion.
+
+---
+### FileSystemResource `withText`
+Return a `FileSystemResource` that will populate the `/tmp/file1.txt` file with `File Contents`
+
+```java
+FileSystemResource.resourceAt("/tmp/file1.txt").withText("File Contents")
+```
+
+---
+### FileSystemResource `withContent`
+Return a `FileSystemResource` that will populate the `/tmp/file2.txt` file with the data returned from createFileInputStream()
+
+```java
+FileSystemResource.resourceAt("/tmp/file2.txt").withContent(this::createFileInputStream)
+```
+
+---
+### FileSystemResource `fromClasspathResource`
+Return a list of `FileSystemResource`'s that will populate the `/tmp/test-data` folder with all files/directories
+under the `test.data` package.
+
+```java
+FileSystemResource.resourceAt("/tmp/test-data").fromClasspathResource("/test/data")
+```
+
+---
+### FileSystemResource `fromPath`
+Return a list of `FileSystemResource`'s that will populate the `/tmp/folder` folder with all the files/directories
+under `path` (path can be files/folders on your hard drive, files/folders in a ZIP/TAR container or event
+files/folders in another in-memory filesystem)
+
+```java
+FileSystemResource.resourceAt("/tmp/folder").fromPath(path)
+```
+
 ## License
 This software is licensed using [MIT](https://opensource.org/licenses/MIT) 

@@ -31,6 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
+import static org.github.ricall.junit5.sftp.FileSystemResource.resourceAt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -41,7 +42,7 @@ public class TestSftpEmbeddedServerExtension {
             .withPort(1234)
             .withUser("u1", "p1")
             .withUser("u2", "p2")
-            .withResources("/tmp/data", "data");
+            .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"));
 
     private SftpClient getSftpClient() throws JSchException {
         return SftpClient.builder()
@@ -64,16 +65,16 @@ public class TestSftpEmbeddedServerExtension {
 
     @Test
     public void verifyWeCanAddResourcesToSftp(final SftpEmbeddedServer server) throws Exception {
-        server.addResources("/tmp/data", "tests/file3.txt");
+        server.addResources(resourceAt("/tmp/data/file3.txt").withText("file 3 contents"));
 
-        // Access the files on the server
+        // Access the sftp filesystem using the server
         final Path path = server.pathFor("/tmp/data/file1.txt");
         assertThat(Files.exists(path), is(true));
         assertThat(Files.lines(path).collect(Collectors.joining()), is("file 1 contents"));
         assertThat(Files.exists(server.pathFor("/tmp/data/file2.txt")), is(true));
         assertThat(Files.exists(server.pathFor("/tmp/data/file3.txt")), is(true));
 
-        // Access the files using the client
+        // Access the filesystem using the client
         final SftpClient client = getSftpClient();
         assertThat(client.readFile("/tmp/data/file1.txt"), is("file 1 contents"));
         assertThat(client.readFile("/tmp/data/file2.txt"), is("file 2 contents"));

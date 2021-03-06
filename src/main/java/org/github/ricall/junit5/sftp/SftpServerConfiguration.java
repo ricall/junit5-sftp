@@ -24,7 +24,9 @@
 package org.github.ricall.junit5.sftp;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.github.ricall.junit5.sftp.implementation.SftpMutableServerConfiguration;
+import org.github.ricall.junit5.sftp.implementation.DefaultSftpServerConfiguration;
+
+import java.util.List;
 
 public interface SftpServerConfiguration {
 
@@ -32,14 +34,14 @@ public interface SftpServerConfiguration {
     String DEFAULT_PASSWORD = "password";
 
     static SftpServerConfiguration configuration() {
-        return SftpMutableServerConfiguration.configuration();
+        return DefaultSftpServerConfiguration.configuration();
     }
 
     SftpServerConfiguration withPort(int port);
 
     SftpServerConfiguration withUser(String username, String password);
 
-    SftpServerConfiguration withResources(String path, String... resource);
+    SftpServerConfiguration withResources(List<FileSystemResource> resources);
 
     SftpServerConfiguration withKeyPairProvider(KeyPairProvider keyPairProvider);
 
