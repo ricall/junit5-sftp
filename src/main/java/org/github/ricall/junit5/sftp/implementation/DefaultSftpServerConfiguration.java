@@ -27,18 +27,23 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
-import org.github.ricall.junit5.sftp.FileSystemResource;
-import org.github.ricall.junit5.sftp.SftpServerConfiguration;
+import org.github.ricall.junit5.sftp.api.FileSystemResource;
+import org.github.ricall.junit5.sftp.api.ServerConfiguration;
 
+import java.nio.file.Path;
 import java.util.*;
 
-public final class DefaultSftpServerConfiguration implements SftpServerConfiguration, PasswordAuthenticator {
+import static org.github.ricall.junit5.sftp.implementation.ServerUtils.classpathResourceToPath;
 
+public final class DefaultSftpServerConfiguration implements ServerConfiguration, PasswordAuthenticator {
+
+    private static final int MIN_PORT = 1;
     private static final int MAX_PORT = 65_535;
     private transient int port;
     private final Map<String, String> users = new LinkedHashMap<>();
     private final List<FileSystemResource> resources = new ArrayList<>();
     private transient KeyPairProvider keyPairProvider = new SimpleGeneratorHostKeyProvider();
+    private transient Path authorizedKeys;
 
     private DefaultSftpServerConfiguration() {
     }
@@ -49,7 +54,7 @@ public final class DefaultSftpServerConfiguration implements SftpServerConfigura
 
     @Override
     public DefaultSftpServerConfiguration withPort(final int port) {
-        if (port < 0 || port > MAX_PORT) {
+        if (port < MIN_PORT || port > MAX_PORT) {
             throw new IllegalArgumentException("Port needs to be between 1-65535");
         }
         this.port = port;
@@ -74,8 +79,15 @@ public final class DefaultSftpServerConfiguration implements SftpServerConfigura
         return this;
     }
 
-    public int getPort() {
-        return port;
+    @Override
+    public DefaultSftpServerConfiguration withAuthorizedKeys(final String classpathResource) {
+        return withAuthorizedKeys(classpathResourceToPath(classpathResource));
+    }
+
+    @Override
+    public DefaultSftpServerConfiguration withAuthorizedKeys(final Path authorizedKeys) {
+        this.authorizedKeys = authorizedKeys;
+        return this;
     }
 
     @Override
@@ -92,7 +104,15 @@ public final class DefaultSftpServerConfiguration implements SftpServerConfigura
             final String username,
             final String oldPassword,
             final String newPassword) {
-        throw new UnsupportedOperationException("Password change not supported");
+        if (authenticate(username, oldPassword, session)) {
+            users.put(username, newPassword);
+            return true;
+        }
+        return false;
+    }
+
+    public int getPort() {
+        return port;
     }
 
     public Map<String, String> getUsers() {
@@ -103,8 +123,15 @@ public final class DefaultSftpServerConfiguration implements SftpServerConfigura
         return resources;
     }
 
+    public Path getAuthorizedKeys() {
+        return authorizedKeys;
+    }
+
     public KeyPairProvider getKeyPairProvider() {
         return keyPairProvider;
     }
 
+    public boolean noAuthenticationDefined() {
+        return authorizedKeys == null && users.isEmpty();
+    }
 }

@@ -23,19 +23,15 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
-import org.github.ricall.junit5.sftp.FileSystemResource;
-import org.github.ricall.junit5.sftp.FileSystemResource.FileSystemResourceBuilder;
-import org.github.ricall.junit5.sftp.SftpServerException;
+import org.github.ricall.junit5.sftp.api.FileSystemResource;
+import org.github.ricall.junit5.sftp.api.FileSystemResource.FileSystemResourceBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +39,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
+import static org.github.ricall.junit5.sftp.implementation.ServerUtils.classpathResourceToPath;
 
 public class DefaultFileSystemResourceBuilder implements FileSystemResourceBuilder {
 
@@ -70,15 +67,7 @@ public class DefaultFileSystemResourceBuilder implements FileSystemResourceBuild
 
     @Override
     public List<FileSystemResource> fromClasspathResource(final String classpathResource) {
-        try {
-            final URL resource = getClass().getResource(classpathResource);
-            if (resource == null) {
-                throw new SftpServerException("Failed to find classpath resource " + classpathResource);
-            }
-            return fromPath(Paths.get(resource.toURI()));
-        } catch (URISyntaxException use) {
-            throw new SftpServerException("Failed to resolve " + classpathResource, use);
-        }
+        return fromPath(classpathResourceToPath(classpathResource));
     }
 
     @Override
@@ -99,7 +88,7 @@ public class DefaultFileSystemResourceBuilder implements FileSystemResourceBuild
                         .flatMap(Collection::stream)
                         .collect(Collectors.toList());
             } catch (IOException e) {
-                throw new SftpServerException("Failed to list directory " + path, e);
+                throw new ServerException("Failed to list directory " + path, e);
             }
         } else {
             return builder.withContent(asResource(path));
@@ -121,7 +110,7 @@ public class DefaultFileSystemResourceBuilder implements FileSystemResourceBuild
             try {
                 return Files.newInputStream(path);
             } catch (IOException e) {
-                throw new SftpServerException("Failed to read " + path, e);
+                throw new ServerException("Failed to read " + path, e);
             }
         };
     }

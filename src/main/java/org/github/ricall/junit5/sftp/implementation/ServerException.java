@@ -21,17 +21,18 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp;
+package org.github.ricall.junit5.sftp.implementation;
 
-import java.nio.file.Path;
-import java.util.List;
+public class ServerException extends RuntimeException {
 
-public interface SftpEmbeddedServer {
+    public static final long serialVersionUID = -3284324234L;
 
-    void addResources(List<FileSystemResource> resource);
+    public ServerException(final String message) {
+        this(message, null);
+    }
 
-    void resetFileSystem();
-
-    Path pathFor(String filename, String... more);
+    public ServerException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 
 }

@@ -27,14 +27,14 @@ Add the dependency to mvn pom.xml
 ```java
 @ExtendWith(SftpEmbeddedServerExtension.class)
 public class TestSftpEmbeddedServer {
-    
-    public final SftpServerConfiguration configuration = SftpServerConfiguration.configuration()
-            .withPort(1234)
-            .withUser("username", "password")
-            .withResources(resourceAt("/tmp/source-data").fromClasspathResource("/test/data"));
 
+    public final ServerConfiguration configuration = ServerConfiguration.configuration()
+            .withPort(1234)
+            .withUser("user", "pass")
+            .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"));
+    
     @Test
-    public void verifySftpFilesCanBeDownloaded(final SftpEmbeddedServer server) {
+    public void verifySftpFilesCanBeDownloaded(final EmbeddedSftpServer server) {
         // sftp server is running on sftp://username:password@localhost:1234
         // The files and directories from the test.data package are copied to /tmp/source-data
         // for every test

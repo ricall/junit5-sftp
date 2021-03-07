@@ -9,10 +9,13 @@ plugins {
 }
 
 group 'io.github.ricall.junit5-sftp'
-version '1.2.0'
+version '1.2.1'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
+
+def initProperty = { if (!project.hasProperty(it)) ext[it]='' }
+['deployUsername', 'deployPassword'].forEach(initProperty)
 
 repositories {
     mavenCentral()
@@ -24,7 +27,10 @@ dependencies {
     implementation "com.github.marschall:memoryfilesystem:$memoryfilesystemVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
 
-    testImplementation "org.hamcrest:hamcrest:$hamcrestVersion"
+    testImplementation "com.github.spotbugs:spotbugs-annotations:4.2.2"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito:mockito-junit-jupiter:$mockitoVersion"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.jcraft:jsch:$jschVersion"
     testImplementation "commons-io:commons-io:$commonsIoVersion"
     testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"

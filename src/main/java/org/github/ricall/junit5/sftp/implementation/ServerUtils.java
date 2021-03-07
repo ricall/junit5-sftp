@@ -21,28 +21,29 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp;
+package org.github.ricall.junit5.sftp.implementation;
 
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.github.ricall.junit5.sftp.implementation.DefaultSftpServerConfiguration;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import java.util.List;
+public final class ServerUtils {
 
-public interface SftpServerConfiguration {
-
-    String DEFAULT_USERNAME = "username";
-    String DEFAULT_PASSWORD = "password";
-
-    static SftpServerConfiguration configuration() {
-        return DefaultSftpServerConfiguration.configuration();
+    private ServerUtils() {
+        // Utility class
     }
 
-    SftpServerConfiguration withPort(int port);
-
-    SftpServerConfiguration withUser(String username, String password);
-
-    SftpServerConfiguration withResources(List<FileSystemResource> resources);
-
-    SftpServerConfiguration withKeyPairProvider(KeyPairProvider keyPairProvider);
+    public static Path classpathResourceToPath(final String classpathResource) {
+        final URL resource = ServerUtils.class.getResource(classpathResource);
+        if (resource == null) {
+            throw new ServerException("Unable to find classpath resource " + classpathResource);
+        }
+        try {
+            return Paths.get(resource.toURI());
+        } catch (URISyntaxException e) {
+            throw new ServerException("Unable to access " + resource, e);
+        }
+    }
 
 }

@@ -23,7 +23,9 @@
 
 package org.github.ricall.junit5.sftp;
 
-import org.github.ricall.junit5.sftp.implementation.DefaultSftpEmbeddedServer;
+import org.github.ricall.junit5.sftp.api.EmbeddedSftpServer;
+import org.github.ricall.junit5.sftp.api.ServerConfiguration;
+import org.github.ricall.junit5.sftp.implementation.DefaultEmbeddedSftpServer;
 import org.github.ricall.junit5.sftp.implementation.DefaultSftpServerConfiguration;
 import org.junit.jupiter.api.extension.*;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
@@ -36,35 +38,61 @@ import java.util.Optional;
 
 import static org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode.TOP_DOWN;
 
-public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEachCallback, AfterAllCallback, ParameterResolver {
-    public static final String NAMESPACE = SftpEmbeddedServer.class.getName();
-    public static final String SERVER_KEY = DefaultSftpEmbeddedServer.class.getName();
+/**
+ * Provides a {@link EmbeddedSftpServer} for your JUnit tests.
+ *
+ * <p>To use:</p>
+ * <pre>{@code
+ * @ExtendWith(EmbeddedSftpServerExtension.class)
+ * public class TestEmbeddedSftpServer {
+ *
+ * }
+ * }</pre>
+ * <p></p>
+ * <p>You can optionally add configuration to control how the embedded sftp server is created</p>
+ * <pre>{@code
+ *      public final ServerConfiguration configuration = ServerConfiguration.configuration()
+ *             .withPort(1234)
+ *             .withUser("user", "pass")
+ *             .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"));
+ * }</pre>
+ * <p></p>
+ * If you need access to the embedded sftp server you can inject it into your test method:
+ * <pre>{@code
+ *     @Test
+ *     public void verifyEmbeddedSftpServer(EmbeddedSftpServer server) {
+ *         server.addResource(resourceAt("/tmp/test.txt").withText("Test File"));
+ *         ...
+ *     }
+ * }</pre>
+ */
+public class EmbeddedSftpServerExtension implements BeforeEachCallback, AfterAllCallback, ParameterResolver {
+
+    public static final String NAMESPACE = EmbeddedSftpServer.class.getName();
+    public static final String SERVER_KEY = DefaultEmbeddedSftpServer.class.getName();
 
     @Override
     public void beforeEach(final ExtensionContext context) {
         if (getServer(context) == null) {
-            final DefaultSftpEmbeddedServer server = new DefaultSftpEmbeddedServer(getConfigurationWithDefault(context));
-            context.getRoot().getStore(Namespace.create(NAMESPACE))
+            final DefaultEmbeddedSftpServer server = new DefaultEmbeddedSftpServer(getConfigurationWithDefault(context));
+            context.getRoot()
+                    .getStore(Namespace.create(NAMESPACE))
                     .put(SERVER_KEY, server);
             server.startServer();
         }
     }
 
-    private DefaultSftpEmbeddedServer getServer(final ExtensionContext context) {
-        return context.getRoot().getStore(Namespace.create(NAMESPACE))
-                .get(SERVER_KEY, DefaultSftpEmbeddedServer.class);
-    }
-
-    @Override
-    public void afterEach(final ExtensionContext context) {
-        getServer(context).resetFileSystem();
+    private DefaultEmbeddedSftpServer getServer(final ExtensionContext context) {
+        return context.getRoot()
+                .getStore(Namespace.create(NAMESPACE))
+                .get(SERVER_KEY, DefaultEmbeddedSftpServer.class);
     }
 
     @Override
     public void afterAll(final ExtensionContext context) {
         getServer(context).stopServer();
         context.getRoot()
-                .getStore(Namespace.create(NAMESPACE, context))
+                .getStore(Namespace.create(NAMESPACE))
                 .remove(SERVER_KEY);
     }
 
@@ -82,7 +110,7 @@ public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEac
     }
 
     private boolean isSftpConfiguration(final Field field) {
-        return field.getType() == SftpServerConfiguration.class;
+        return field.getType() == ServerConfiguration.class;
     }
 
     private DefaultSftpServerConfiguration getConfigurationFromField(final Field field, final Object testInstance) {
@@ -109,7 +137,7 @@ public class SftpEmbeddedServerExtension implements BeforeEachCallback, AfterEac
     }
 
     private boolean isSftpServerParameter(final Parameter parameter) {
-        return parameter.getType() == SftpEmbeddedServer.class;
+        return parameter.getType() == EmbeddedSftpServer.class;
     }
 
 }

@@ -21,35 +21,44 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp;
+package org.github.ricall.junit5.sftp.api;
 
-import org.github.ricall.junit5.sftp.implementation.DefaultFileSystemResourceBuilder;
-
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.function.Supplier;
 
-public interface FileSystemResource {
+/**
+ * Controls the embedded sftp server.
+ * <p>
+ * This interface can be used to add resources to the embedded sftp filesystem as well as using the {@link Path}
+ * object to perform any actions needed on the filesystem.
+ * </p>
+ */
+public interface EmbeddedSftpServer {
 
-    String getDestination();
+    /**
+     * Add a resources into the server.
+     *
+     * @param resources The resources to add
+     * @see FileSystemResource
+     */
+    void addResources(List<FileSystemResource> resources);
 
-    InputStream getInputStream();
+    /**
+     * Reset the filesystem back to its default state.
+     * <p>
+     * The filesystem is automatically reset after each test so you typically never need to call this method.
+     * </p>
+     */
+    void resetFileSystem();
 
-    static FileSystemResourceBuilder resourceAt(String destination) {
-        return new DefaultFileSystemResourceBuilder(destination);
-    }
-
-    interface FileSystemResourceBuilder {
-
-        List<FileSystemResource> withText(String text);
-
-        List<FileSystemResource> withContent(Supplier<InputStream> streamSupplier);
-
-        List<FileSystemResource> fromClasspathResource(String classpathResource);
-
-        List<FileSystemResource> fromPath(Path path);
-
-    }
+    /**
+     * Get a resource from the embedded sftp servers FileSystem.
+     *
+     * @param filename The first part of the resources path
+     * @param more vararg list of additional parts of the path
+     * @return The FileSystem resource associated with the path
+     * @see java.nio.file.FileSystem#getPath(String, String...)
+     */
+    Path pathFor(String filename, String... more);
 
 }

@@ -21,18 +21,9 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp;
-
-public class SftpServerException extends RuntimeException {
-
-    public static final long serialVersionUID = -3284324234L;
-
-    public SftpServerException(final String message) {
-        this(message, null);
-    }
-
-    public SftpServerException(final String message, final Throwable cause) {
-        super(message, cause);
-    }
-
-}
+/**
+ * Provides the API for working with the EmbeddedSftpServer.
+ *
+ * <p>Public API for adding a sftp server into your JUnit tests</p>
+ */
+package org.github.ricall.junit5.sftp.api;

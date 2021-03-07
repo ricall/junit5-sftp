@@ -22,7 +22,7 @@
  */
 
 /**
- * Provides the {@link org.github.ricall.junit5.sftp.SftpEmbeddedServerExtension} class.
+ * Provides the {@link org.github.ricall.junit5.sftp.EmbeddedSftpServerExtension} class.
  *
  * <p>Public API for adding a sftp server into your JUnit tests</p>
  */

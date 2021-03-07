@@ -26,22 +26,24 @@ package org.github.ricall.junit5.sftp.implementation;
 import com.github.marschall.memoryfilesystem.MemoryFileSystemBuilder;
 import com.github.marschall.memoryfilesystem.StringTransformers;
 import org.apache.sshd.server.SshServer;
+import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
-import org.github.ricall.junit5.sftp.FileSystemResource;
-import org.github.ricall.junit5.sftp.SftpEmbeddedServer;
-import org.github.ricall.junit5.sftp.SftpServerException;
+import org.github.ricall.junit5.sftp.api.EmbeddedSftpServer;
+import org.github.ricall.junit5.sftp.api.FileSystemResource;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFileAttributeView;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
-import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_PASSWORD;
-import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_USERNAME;
+import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_PASSWORD;
+import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_USERNAME;
 
-public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
+public final class DefaultEmbeddedSftpServer implements EmbeddedSftpServer {
 
     private static final String PATH_SEPARATOR = "/";
     private static final String SFTP_USER_AND_GROUP = "sftp";
@@ -51,29 +53,35 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
     private transient FileSystem fileSystem;
     private transient SshServer server;
 
-    public DefaultSftpEmbeddedServer(final DefaultSftpServerConfiguration configuration) {
+    public DefaultEmbeddedSftpServer(final DefaultSftpServerConfiguration configuration) {
         this.configuration = configuration;
-        if (configuration.getUsers().isEmpty()) {
+
+        if (configuration.noAuthenticationDefined()) {
             configuration.getUsers().put(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         }
     }
 
+    @SuppressWarnings("PMD.CloseResource")
     public void startServer() {
         fileSystem = createFileSystem();
 
-        this.server = SshServer.setUpDefaultServer();
-        server.setPort(configuration.getPort());
-        server.setKeyPairProvider(configuration.getKeyPairProvider());
-        server.setPasswordAuthenticator(configuration);
-        server.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-        server.setFileSystemFactory(ReusableFileSystem.fileSystemFactory(fileSystem));
+        final SshServer newServer = SshServer.setUpDefaultServer();
+        newServer.setPort(configuration.getPort());
+        newServer.setPasswordAuthenticator(configuration);
+        if (configuration.getAuthorizedKeys() != null) {
+            newServer.setPublickeyAuthenticator(new AuthorizedKeysAuthenticator(configuration.getAuthorizedKeys()));
+        }
+        newServer.setKeyPairProvider(configuration.getKeyPairProvider());
+        newServer.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+        newServer.setFileSystemFactory(ReusableFileSystem.fileSystemFactory(fileSystem));
         addResources(configuration.getResources());
 
         try {
-            server.start();
+            newServer.start();
         } catch (IOException e) {
-            throw new SftpServerException("Failed to start the SFTP serverInstance", e);
+            throw new ServerException("Failed to start the SFTP serverInstance", e);
         }
+        this.server = newServer;
     }
 
     private FileSystem createFileSystem() {
@@ -91,7 +99,7 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
                     .addForbiddenCharacter((char) 0)
                     .build("sftpFileSystem." + UUID.randomUUID());
         } catch (IOException e) {
-            throw new SftpServerException("Failed to create FileSystem", e);
+            throw new ServerException("Failed to create FileSystem", e);
         }
     }
 
@@ -104,7 +112,7 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
             try {
                 Files.copy(resource.getInputStream(), destination);
             } catch (IOException e) {
-                throw new SftpServerException("Failed to copy " + resource + " to FileSystem", e);
+                throw new ServerException("Failed to copy " + resource + " to FileSystem", e);
             }
         });
     }
@@ -116,7 +124,7 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
                 Files.createDirectories(parent);
             }
         } catch (IOException e) {
-            throw new SftpServerException("Failed to create folder " + path, e);
+            throw new ServerException("Failed to create folder " + path, e);
         }
     }
 
@@ -128,7 +136,7 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
             server.setFileSystemFactory(ReusableFileSystem.fileSystemFactory(fileSystem));
             addResources(configuration.getResources());
         } catch (IOException e) {
-            throw new SftpServerException("Failed to close FileSystem", e);
+            throw new ServerException("Failed to close FileSystem", e);
         }
     }
 
@@ -139,9 +147,9 @@ public final class DefaultSftpEmbeddedServer implements SftpEmbeddedServer {
 
     public void stopServer() {
         try {
-            server.stop();
+            server.stop(false);
         } catch (IOException e) {
-            throw new SftpServerException("Failed to stop SFTP server", e);
+            throw new ServerException("Failed to stop SFTP server", e);
         }
     }
 

@@ -21,20 +21,23 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp;
+package org.github.ricall.junit5.sftp.client;
 
 import com.jcraft.jsch.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import static java.nio.file.Files.newInputStream;
 import static org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION;
-import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_PASSWORD;
-import static org.github.ricall.junit5.sftp.SftpServerConfiguration.DEFAULT_USERNAME;
+import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_PASSWORD;
+import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_USERNAME;
+import static org.github.ricall.junit5.sftp.implementation.ServerUtils.classpathResourceToPath;
 
-public final class SftpClient {
+public final class SftpClient implements Closeable {
 
     private static final JSch JSCH = new JSch();
 
@@ -42,9 +45,17 @@ public final class SftpClient {
     private final ChannelSftp channel;
 
     private SftpClient(final Configuration configuration) throws JSchException {
+        JSCH.removeAllIdentity();
+        if (configuration.privateKey != null) {
+            JSCH.addIdentity(configuration.username, configuration.privateKey, null, null);
+        }
+
         session = JSCH.getSession(configuration.username, configuration.host, configuration.port);
         session.setConfig(STRICT_CHECKING_OPTION, "no");
-        session.setPassword(configuration.password);
+        if (configuration.password != null) {
+            session.setPassword(configuration.password);
+            session.setConfig("PreferredAuthentications", "password");
+        }
         session.connect(configuration.connectTimeout);
 
         channel = (ChannelSftp) session.openChannel("sftp");
@@ -71,15 +82,34 @@ public final class SftpClient {
         return IOUtils.toString(channel.get(path), Charset.defaultCharset());
     }
 
+    @Override
+    public void close() {
+        getChannel().disconnect();
+        getSession().disconnect();
+    }
+
     public final static class Configuration {
         private String host = "localhost";
         private String username = DEFAULT_USERNAME;
         private String password = DEFAULT_PASSWORD;
-        private int port = -1;
+        private byte[] privateKey;
+        private int port;
         private int connectTimeout = 15_000;
 
         public Configuration host(final String host) {
             this.host = host;
+            return this;
+        }
+
+        @SuppressWarnings("PMD.NullAssignment")
+        public Configuration withIdentity(final String privateKey) {
+            try {
+                username = null;
+                password = null;
+                this.privateKey = IOUtils.toByteArray(newInputStream(classpathResourceToPath(privateKey)));
+            } catch (IOException e) {
+                throw new IllegalArgumentException("Failed to read private key " + privateKey, e);
+            }
             return this;
         }
 
