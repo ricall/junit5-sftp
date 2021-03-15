@@ -33,6 +33,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "com.jcraft:jsch:$jschVersion"
     testImplementation "commons-io:commons-io:$commonsIoVersion"
+    testImplementation "org.apache.commons:commons-vfs2:$commonsVfsVersion"
     testRuntimeOnly "ch.qos.logback:logback-classic:$logbackVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 }
