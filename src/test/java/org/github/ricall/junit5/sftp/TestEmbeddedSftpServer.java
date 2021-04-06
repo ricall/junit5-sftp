@@ -30,6 +30,7 @@ import org.github.ricall.junit5.sftp.client.SftpClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
@@ -52,6 +53,20 @@ public class TestEmbeddedSftpServer {
                 .connectAs("user", "pass")
                 .port(1234)
                 .build();
+    }
+
+    @Test
+    public void verifyWeCanWriteTheSameFileTwice(final EmbeddedSftpServer server) throws IOException {
+        server.addResources(resourceAt("/tmp/file1.txt").withText("file1 contents"));
+
+        assertThat(Files.readAllLines(server.pathFor("/tmp/file1.txt"))).contains("file1 contents");
+    }
+
+    @Test
+    public void verifyWeCanWriteTheSameFileTwiceRedux(final EmbeddedSftpServer server) throws IOException {
+        server.addResources(resourceAt("/tmp/file1.txt").withText("file1 contents redux"));
+
+        assertThat(Files.readAllLines(server.pathFor("/tmp/file1.txt"))).contains("file1 contents redux");
     }
 
     @Test

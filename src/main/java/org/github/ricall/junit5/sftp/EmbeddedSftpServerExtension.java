@@ -73,12 +73,15 @@ public class EmbeddedSftpServerExtension implements BeforeEachCallback, AfterAll
 
     @Override
     public void beforeEach(final ExtensionContext context) {
-        if (getServer(context) == null) {
-            final DefaultEmbeddedSftpServer server = new DefaultEmbeddedSftpServer(getConfigurationWithDefault(context));
+        DefaultEmbeddedSftpServer server = getServer(context);
+        if (server == null) {
+            server = new DefaultEmbeddedSftpServer(getConfigurationWithDefault(context));
             context.getRoot()
                     .getStore(Namespace.create(NAMESPACE))
                     .put(SERVER_KEY, server);
             server.startServer();
+        } else {
+            server.resetFileSystem();
         }
     }
 

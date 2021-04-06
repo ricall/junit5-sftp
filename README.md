@@ -18,7 +18,7 @@ Add the dependency to mvn pom.xml
 <dependency>
     <groupId>io.github.ricall.junit5-sftp</groupId>
     <artifactId>junit5-sftp</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
     <scope>test</scope>
 </dependency>
 ```
