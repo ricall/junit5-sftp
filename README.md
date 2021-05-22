@@ -11,7 +11,7 @@ This JUnit 5 libary provides a way to create a sftp server that can be used for 
 Add the dependency to gradle
 
 ```groovy
-testImplementation 'io.github.ricall.junit5-sftp:junit5-sftp:2.0.0'
+testImplementation 'io.github.ricall.junit5-sftp:junit5-sftp:2.0.1'
 ```
 
 ### Maven
@@ -23,7 +23,7 @@ Add the dependency to mvn pom.xml
 <dependency>
     <groupId>io.github.ricall.junit5-sftp</groupId>
     <artifactId>junit5-sftp</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
     <scope>test</scope>
 </dependency>
 ```

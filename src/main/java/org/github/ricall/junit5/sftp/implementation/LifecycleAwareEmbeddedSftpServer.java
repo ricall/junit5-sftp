@@ -41,20 +41,18 @@ public class LifecycleAwareEmbeddedSftpServer
     public static final String SERVER_KEY = DefaultEmbeddedSftpServer.class.getName();
 
     private final SftpConfiguration configuration;
-    private transient boolean serverPerMethod;
 
     @Delegate
     private transient EmbeddedSftpServer server;
+    private transient boolean serverPerMethod;
 
     @Override
     public void beforeAll(final ExtensionContext context) {
-        System.out.format("*** before all ***%n");
         initialiseServer(context);
     }
 
     @Override
     public void beforeEach(final ExtensionContext context) {
-        System.out.format("*** before each ***%n");
         if (this.server == null) {
             serverPerMethod = true;
             initialiseServer(context);
@@ -65,7 +63,6 @@ public class LifecycleAwareEmbeddedSftpServer
 
     @Override
     public void afterEach(final ExtensionContext context) {
-        System.out.format("*** after each ***%n");
         if (serverPerMethod) {
             cleanupServer(context);
         }
@@ -73,7 +70,6 @@ public class LifecycleAwareEmbeddedSftpServer
 
     @Override
     public void afterAll(final ExtensionContext context) {
-        System.out.format("*** after all ***%n");
         if (server != null) {
             cleanupServer(context);
         }
