@@ -23,7 +23,7 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
-import org.github.ricall.junit5.sftp.api.FileSystemResource;
+import org.github.ricall.junit5.sftp.FileSystemResource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

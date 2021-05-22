@@ -21,29 +21,49 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp.api;
+package org.github.ricall.junit5.sftp;
 
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.github.ricall.junit5.sftp.implementation.DefaultSftpServerConfiguration;
+import org.github.ricall.junit5.sftp.implementation.SftpConfiguration;
 
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Used to configure the embedded sftp server.
+ * Builder used to create EmbeddedSftpServer instances for testing.
+ * To use the builder:
+ * <pre>{@code
+ * public class TestEmbeddedSftpServer {
+ *
+ *     @RegisterExtension
+ *     public final EmbeddedSftpServer sftpServer = SftpServer.defaultSftpServer()
+ *             .withPort(3022)
+ *             .withUser("user", "pass")
+ *             .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"))
+ *             .build();
+ *
+ *     @Test
+ *     public void verifySftpFilesCanBeDownloaded() {
+ *         // sftp server is running on sftp://user:pass@localhost:3022
+ *         // the files and directories from the data package are copied into the /tmp/data folder
+ *         // on the sftp server
+ *     }
+ *
+ * }
+ * }</pre>>
  */
-public interface ServerConfiguration {
+public interface SftpServer {
 
     String DEFAULT_USERNAME = "username";
     String DEFAULT_PASSWORD = "password";
 
     /**
-     * Used to create the configuration builder.
+     * Default builder for the embedded sftp server.
      *
      * @return A configuration builder
      */
-    static ServerConfiguration configuration() {
-        return DefaultSftpServerConfiguration.configuration();
+    static SftpServer defaultSftpServer() {
+        return SftpConfiguration.configuration();
     }
 
     /**
@@ -52,7 +72,7 @@ public interface ServerConfiguration {
      * @param port The port number (between 1 and 65535)
      * @return The configuration builder
      */
-    ServerConfiguration withPort(int port);
+    SftpServer withPort(int port);
 
     /**
      * Add a username/password to the list of authorized users.
@@ -63,7 +83,7 @@ public interface ServerConfiguration {
      * @param password The login password of the user
      * @return The configuration builder
      */
-    ServerConfiguration withUser(String username, String password);
+    SftpServer withUser(String username, String password);
 
     /**
      * Add a list of resources to copy into the embedded sftp server for every test.
@@ -75,7 +95,7 @@ public interface ServerConfiguration {
      * @param resources A list of all the resources to copy
      * @return The configuration builder
      */
-    ServerConfiguration withResources(List<FileSystemResource> resources);
+    SftpServer withResources(List<FileSystemResource> resources);
 
     /**
      * Add a list of authorized pub keys using a classpath resource.
@@ -85,7 +105,7 @@ public interface ServerConfiguration {
      * @param classpathResource The path to the resource containing the public keys
      * @return The configuration builder
      */
-    ServerConfiguration withAuthorizedKeys(String classpathResource);
+    SftpServer withAuthorizedKeys(String classpathResource);
 
     /**
      * Add a list of authorized pub keys using a {@link Path}.
@@ -95,7 +115,7 @@ public interface ServerConfiguration {
      * @param withAuthorizedKeys The file containing the public keys
      * @return The configuration builder
      */
-    ServerConfiguration withAuthorizedKeys(Path withAuthorizedKeys);
+    SftpServer withAuthorizedKeys(Path withAuthorizedKeys);
 
     /**
      * Provides a {@link KeyPairProvider} for host identity checking.
@@ -103,6 +123,13 @@ public interface ServerConfiguration {
      * @param keyPairProvider The {@link KeyPairProvider} containing the Hosts private key and the clients public key
      * @return The configuration builder
      */
-    ServerConfiguration withKeyPairProvider(KeyPairProvider keyPairProvider);
+    SftpServer withKeyPairProvider(KeyPairProvider keyPairProvider);
+
+    /**
+     * Create a EmbeddedSftpServer that can be used for testing.
+     *
+     * @return The embedded sftp server to use for testing
+     */
+    EmbeddedSftpServer build();
 
 }

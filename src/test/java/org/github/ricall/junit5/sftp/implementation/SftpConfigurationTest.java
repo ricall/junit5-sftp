@@ -23,8 +23,8 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
-import org.github.ricall.junit5.sftp.api.FileSystemResource;
-import org.github.ricall.junit5.sftp.api.ServerConfiguration;
+import org.github.ricall.junit5.sftp.FileSystemResource;
+import org.github.ricall.junit5.sftp.SftpServer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -32,15 +32,15 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-class DefaultServerConfigurationTest {
+class SftpConfigurationTest {
 
     private static final String USER = "user";
     private static final String PASS = "pass";
     private static final String INVALID_PASSWORD = "invalid";
     private static final String NEW_PASSWORD = "new password";
 
-    private final DefaultSftpServerConfiguration configuration =
-            (DefaultSftpServerConfiguration) ServerConfiguration.configuration();
+    private final SftpConfiguration configuration =
+            (SftpConfiguration) SftpServer.defaultSftpServer();
 
     @Test
     public void verifyWeCanSetThePort() {

@@ -33,8 +33,8 @@ import java.nio.charset.Charset;
 
 import static java.nio.file.Files.newInputStream;
 import static org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier.STRICT_CHECKING_OPTION;
-import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_PASSWORD;
-import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_USERNAME;
+import static org.github.ricall.junit5.sftp.SftpServer.DEFAULT_PASSWORD;
+import static org.github.ricall.junit5.sftp.SftpServer.DEFAULT_USERNAME;
 import static org.github.ricall.junit5.sftp.implementation.ServerUtils.classpathResourceToPath;
 
 public final class SftpClient implements Closeable {

@@ -28,8 +28,8 @@ import com.github.marschall.memoryfilesystem.StringTransformers;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
-import org.github.ricall.junit5.sftp.api.EmbeddedSftpServer;
-import org.github.ricall.junit5.sftp.api.FileSystemResource;
+import org.github.ricall.junit5.sftp.EmbeddedSftpServer;
+import org.github.ricall.junit5.sftp.FileSystemResource;
 
 import java.io.IOException;
 import java.nio.file.FileSystem;
@@ -40,8 +40,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_PASSWORD;
-import static org.github.ricall.junit5.sftp.api.ServerConfiguration.DEFAULT_USERNAME;
+import static org.github.ricall.junit5.sftp.SftpServer.DEFAULT_PASSWORD;
+import static org.github.ricall.junit5.sftp.SftpServer.DEFAULT_USERNAME;
 
 public final class DefaultEmbeddedSftpServer implements EmbeddedSftpServer {
 
@@ -49,15 +49,15 @@ public final class DefaultEmbeddedSftpServer implements EmbeddedSftpServer {
     private static final String SFTP_USER_AND_GROUP = "sftp";
     private static final String HOME_DIRECTORY = "/home/sftp";
 
-    private transient final DefaultSftpServerConfiguration configuration;
+    private transient final SftpConfiguration configuration;
     private transient FileSystem fileSystem;
     private transient SshServer server;
 
-    public DefaultEmbeddedSftpServer(final DefaultSftpServerConfiguration configuration) {
+    public DefaultEmbeddedSftpServer(final SftpConfiguration configuration) {
         this.configuration = configuration;
 
         if (configuration.noAuthenticationDefined()) {
-            configuration.getUsers().put(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+            configuration.withUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         }
     }
 

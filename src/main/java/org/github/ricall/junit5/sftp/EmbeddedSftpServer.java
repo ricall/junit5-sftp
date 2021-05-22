@@ -21,7 +21,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package org.github.ricall.junit5.sftp.api;
+package org.github.ricall.junit5.sftp;
 
 import java.nio.file.Path;
 import java.util.List;

@@ -23,16 +23,15 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
+import lombok.experimental.UtilityClass;
+
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@UtilityClass
 public final class ServerUtils {
-
-    private ServerUtils() {
-        // Utility class
-    }
 
     public static Path classpathResourceToPath(final String classpathResource) {
         final URL resource = ServerUtils.class.getResource(classpathResource);

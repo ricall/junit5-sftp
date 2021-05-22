@@ -29,26 +29,25 @@ import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.impl.StandardFileSystemManager;
 import org.apache.commons.vfs2.provider.sftp.SftpFileSystemConfigBuilder;
-import org.github.ricall.junit5.sftp.api.EmbeddedSftpServer;
-import org.github.ricall.junit5.sftp.api.ServerConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.github.ricall.junit5.sftp.api.FileSystemResource.resourceAt;
+import static org.github.ricall.junit5.sftp.FileSystemResource.resourceAt;
 
-@ExtendWith(EmbeddedSftpServerExtension.class)
 public class TestEmbeddedSftpServerWithCommonsVfs {
 
-    public final ServerConfiguration configuration = ServerConfiguration.configuration()
-            .withPort(1234)
+    @RegisterExtension
+    public final EmbeddedSftpServer sftpServer = SftpServer.defaultSftpServer()
+            .withPort(3022)
             .withUser("user", "pass")
-            .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"));
+            .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"))
+            .build();
 
     private static final StandardFileSystemManager FSM = new StandardFileSystemManager();
 
@@ -59,8 +58,8 @@ public class TestEmbeddedSftpServerWithCommonsVfs {
 
     @Test
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
-    public void downloadFileInHomeFolder(final EmbeddedSftpServer server) throws IOException {
-        server.addResources(resourceAt("file1.txt").withText("file 1 contents"));
+    public void downloadFileInHomeFolder() throws IOException {
+        sftpServer.addResources(resourceAt("file1.txt").withText("file 1 contents"));
         final SftpFileSystemConfigBuilder builder = SftpFileSystemConfigBuilder.getInstance();
 
         final FileSystemOptions options = new FileSystemOptions();
@@ -68,7 +67,7 @@ public class TestEmbeddedSftpServerWithCommonsVfs {
         builder.setUserDirIsRoot(options, true);
         builder.setConnectTimeout(options, Duration.ofMillis(10_000));
 
-        try (FileObject remoteFile = FSM.resolveFile("sftp://user:pass@localhost:1234/file1.txt", options)) {
+        try (FileObject remoteFile = FSM.resolveFile("sftp://user:pass@localhost:3022/file1.txt", options)) {
             final String text = remoteFile.getContent().getString(StandardCharsets.UTF_8);
             assertThat(text).isEqualTo("file 1 contents");
         }
@@ -76,8 +75,8 @@ public class TestEmbeddedSftpServerWithCommonsVfs {
 
     @Test
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE")
-    public void downloadFileUsingAbsolutePath(final EmbeddedSftpServer server) throws IOException {
-        server.addResources(resourceAt("/tmp/file1.txt").withText("file in /tmp folder"));
+    public void downloadFileUsingAbsolutePath() throws IOException {
+        sftpServer.addResources(resourceAt("/tmp/file1.txt").withText("file in /tmp folder"));
         final SftpFileSystemConfigBuilder builder = SftpFileSystemConfigBuilder.getInstance();
 
         final FileSystemOptions options = new FileSystemOptions();
@@ -85,7 +84,7 @@ public class TestEmbeddedSftpServerWithCommonsVfs {
         builder.setUserDirIsRoot(options, false);
         builder.setConnectTimeout(options, Duration.ofMillis(10_000));
 
-        try (FileObject remoteFile = FSM.resolveFile("sftp://user:pass@localhost:1234/tmp/file1.txt", options)) {
+        try (FileObject remoteFile = FSM.resolveFile("sftp://user:pass@localhost:3022/tmp/file1.txt", options)) {
             final String text = remoteFile.getContent().getString(StandardCharsets.UTF_8);
             assertThat(text).isEqualTo("file in /tmp folder");
         }

@@ -38,12 +38,12 @@ import static java.util.stream.IntStream.rangeClosed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.github.ricall.junit5.sftp.FileSystemResource.resourceAt;
 
-public class TestEmbeddedSftpServer {
+public class TestEmbeddedStaticSftpServer {
 
     public static final String TEMP_FILE = "/tmp/file1.txt";
 
     @RegisterExtension
-    public final EmbeddedSftpServer sftpServer = SftpServer.defaultSftpServer()
+    public final static EmbeddedSftpServer SFTP_SERVER = SftpServer.defaultSftpServer()
             .withPort(3022)
             .withUser("user", "pass")
             .withResources(resourceAt("/tmp/data").fromClasspathResource("/data"))
@@ -58,22 +58,22 @@ public class TestEmbeddedSftpServer {
 
     @Test
     public void verifyWeCanWriteTheSameFileTwice() throws IOException {
-        sftpServer.addResources(resourceAt(TEMP_FILE).withText("file1 contents"));
+        SFTP_SERVER.addResources(resourceAt(TEMP_FILE).withText("file1 contents"));
 
-        assertThat(Files.readAllLines(sftpServer.pathFor(TEMP_FILE))).contains("file1 contents");
+        assertThat(Files.readAllLines(SFTP_SERVER.pathFor(TEMP_FILE))).contains("file1 contents");
     }
 
     @Test
     public void verifyWeCanWriteTheSameFileTwiceRedux() throws IOException {
-        sftpServer.addResources(resourceAt(TEMP_FILE).withText("file1 contents redux"));
+        SFTP_SERVER.addResources(resourceAt(TEMP_FILE).withText("file1 contents redux"));
 
-        assertThat(Files.readAllLines(sftpServer.pathFor(TEMP_FILE))).contains("file1 contents redux");
+        assertThat(Files.readAllLines(SFTP_SERVER.pathFor(TEMP_FILE))).contains("file1 contents redux");
     }
 
     @Test
     public void verifyClientCanWriteAsSimpleTextFile() throws Exception {
         try (SftpClient client = getSftpClient()) {
-            final Path path = sftpServer.pathFor("sample file.txt");
+            final Path path = SFTP_SERVER.pathFor("sample file.txt");
             assertThat(Files.exists(path)).isEqualTo(false);
 
             client.writeFile("sample file.txt", "Sample file contents");
@@ -96,11 +96,11 @@ public class TestEmbeddedSftpServer {
         // Add some additional resources
         rangeClosed(3, 10).boxed()
                 .map(index -> resourceAt(filenameFor(index)).withText(bodyFor(index)))
-                .forEach(sftpServer::addResources);
+                .forEach(SFTP_SERVER::addResources);
 
         // Access the sftp filesystem using the server
         for (final int index: rangeClosed(1, 10).toArray()) {
-            final Path path = sftpServer.pathFor(filenameFor(index));
+            final Path path = SFTP_SERVER.pathFor(filenameFor(index));
 
             assertThat(Files.exists(path)).isEqualTo(true);
             assertThat(Files.lines(path).collect(Collectors.joining())).isEqualTo(bodyFor(index));
@@ -119,15 +119,15 @@ public class TestEmbeddedSftpServer {
 
     @Test
     public void verifyResetFilesystemWorksAsExpected() {
-        sftpServer.addResources(resourceAt("/tmp/file.txt").withText("dummy file"));
+        SFTP_SERVER.addResources(resourceAt("/tmp/file.txt").withText("dummy file"));
 
-        assertThat(Files.exists(sftpServer.pathFor("/tmp/file.txt"))).isTrue();
-        assertThat(Files.isDirectory(sftpServer.pathFor("/home/sftp"))).isTrue();
+        assertThat(Files.exists(SFTP_SERVER.pathFor("/tmp/file.txt"))).isTrue();
+        assertThat(Files.isDirectory(SFTP_SERVER.pathFor("/home/sftp"))).isTrue();
 
-        sftpServer.resetFileSystem();
+        SFTP_SERVER.resetFileSystem();
 
-        assertThat(Files.exists(sftpServer.pathFor("/tmp/file.txt"))).isFalse();
-        assertThat(Files.isDirectory(sftpServer.pathFor("/home/sftp"))).isTrue();
+        assertThat(Files.exists(SFTP_SERVER.pathFor("/tmp/file.txt"))).isFalse();
+        assertThat(Files.isDirectory(SFTP_SERVER.pathFor("/home/sftp"))).isTrue();
     }
 
 }

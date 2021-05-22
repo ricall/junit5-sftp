@@ -26,6 +26,7 @@ package org.github.ricall.junit5.sftp;
 import com.jcraft.jsch.JSchException;
 import org.github.ricall.junit5.sftp.client.SftpClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
@@ -37,8 +38,10 @@ import static java.lang.String.format;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.github.ricall.junit5.sftp.FileSystemResource.resourceAt;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
-public class TestEmbeddedSftpServer {
+@TestInstance(PER_CLASS)
+public class TestEmbeddedSftpServerWithPerClassLifecycle {
 
     public static final String TEMP_FILE = "/tmp/file1.txt";
 

@@ -24,28 +24,28 @@
 package org.github.ricall.junit5.sftp;
 
 import com.jcraft.jsch.JSchException;
-import org.github.ricall.junit5.sftp.api.ServerConfiguration;
 import org.github.ricall.junit5.sftp.client.SftpClient;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.github.ricall.junit5.sftp.api.FileSystemResource.resourceAt;
+import static org.github.ricall.junit5.sftp.FileSystemResource.resourceAt;
 
-@ExtendWith(EmbeddedSftpServerExtension.class)
 public class TestEmbeddedSftpServerWithPrivateKeyAuthentication {
 
-    public final ServerConfiguration configuration = ServerConfiguration.configuration()
-            .withPort(1234)
+    @RegisterExtension
+    public final EmbeddedSftpServer sftpServer = SftpServer.defaultSftpServer()
+            .withPort(3022)
             .withAuthorizedKeys("/keys/publicKey.txt")
-            .withResources(resourceAt("/customer/data").fromClasspathResource("/data"));
+            .withResources(resourceAt("/customer/data").fromClasspathResource("/data"))
+            .build();
 
     @Test
     public void verifyWeCanConnectToServer() throws Exception {
         try (SftpClient client = SftpClient.builder()
                 .withIdentity("/keys/privateKey.txt")
-                .port(1234)
+                .port(3022)
                 .build()) {
 
             assertThat(client.readFile("/customer/data/success/success1.xml")).isEqualTo("<xml>success</xml>");
@@ -53,11 +53,9 @@ public class TestEmbeddedSftpServerWithPrivateKeyAuthentication {
     }
 
     @Test
-    public void verifyThatWeCannotConnectToTheServerWithoutThePrivateKey() throws Exception {
+    public void verifyThatWeCannotConnectToTheServerWithoutThePrivateKey() {
         assertThatExceptionOfType(JSchException.class)
-                .isThrownBy(() -> SftpClient.builder()
-                        .port(1234)
-                        .build())
+                .isThrownBy(() -> SftpClient.builder().port(3022).build())
                 .withMessage("Auth fail");
     }
 

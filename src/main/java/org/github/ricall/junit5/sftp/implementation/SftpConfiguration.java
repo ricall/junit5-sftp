@@ -23,37 +23,39 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
+import lombok.Getter;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
-import org.github.ricall.junit5.sftp.api.FileSystemResource;
-import org.github.ricall.junit5.sftp.api.ServerConfiguration;
+import org.github.ricall.junit5.sftp.EmbeddedSftpServer;
+import org.github.ricall.junit5.sftp.FileSystemResource;
+import org.github.ricall.junit5.sftp.SftpServer;
 
 import java.nio.file.Path;
 import java.util.*;
 
 import static org.github.ricall.junit5.sftp.implementation.ServerUtils.classpathResourceToPath;
 
-public final class DefaultSftpServerConfiguration implements ServerConfiguration, PasswordAuthenticator {
+@Getter
+@SuppressWarnings("PMD.TooManyMethods")
+public final class SftpConfiguration implements SftpServer, PasswordAuthenticator {
 
     private static final int MIN_PORT = 1;
     private static final int MAX_PORT = 65_535;
-    private transient int port;
+
+    private int port;
     private final Map<String, String> users = new LinkedHashMap<>();
     private final List<FileSystemResource> resources = new ArrayList<>();
-    private transient KeyPairProvider keyPairProvider = new SimpleGeneratorHostKeyProvider();
-    private transient Path authorizedKeys;
+    private KeyPairProvider keyPairProvider = new SimpleGeneratorHostKeyProvider();
+    private Path authorizedKeys;
 
-    private DefaultSftpServerConfiguration() {
-    }
-
-    public static DefaultSftpServerConfiguration configuration() {
-        return new DefaultSftpServerConfiguration();
+    public static SftpConfiguration configuration() {
+        return new SftpConfiguration();
     }
 
     @Override
-    public DefaultSftpServerConfiguration withPort(final int port) {
+    public SftpConfiguration withPort(final int port) {
         if (port < MIN_PORT || port > MAX_PORT) {
             throw new IllegalArgumentException("Port needs to be between 1-65535");
         }
@@ -62,30 +64,30 @@ public final class DefaultSftpServerConfiguration implements ServerConfiguration
     }
 
     @Override
-    public DefaultSftpServerConfiguration withUser(final String username, final String password) {
+    public SftpConfiguration withUser(final String username, final String password) {
         this.users.put(username, password);
         return this;
     }
 
     @Override
-    public DefaultSftpServerConfiguration withResources(final List<FileSystemResource> resources) {
+    public SftpConfiguration withResources(final List<FileSystemResource> resources) {
         this.resources.addAll(resources);
         return this;
     }
 
     @Override
-    public DefaultSftpServerConfiguration withKeyPairProvider(final KeyPairProvider keyPairProvider) {
+    public SftpConfiguration withKeyPairProvider(final KeyPairProvider keyPairProvider) {
         this.keyPairProvider = keyPairProvider;
         return this;
     }
 
     @Override
-    public DefaultSftpServerConfiguration withAuthorizedKeys(final String classpathResource) {
+    public SftpConfiguration withAuthorizedKeys(final String classpathResource) {
         return withAuthorizedKeys(classpathResourceToPath(classpathResource));
     }
 
     @Override
-    public DefaultSftpServerConfiguration withAuthorizedKeys(final Path authorizedKeys) {
+    public SftpConfiguration withAuthorizedKeys(final Path authorizedKeys) {
         this.authorizedKeys = authorizedKeys;
         return this;
     }
@@ -111,27 +113,13 @@ public final class DefaultSftpServerConfiguration implements ServerConfiguration
         return false;
     }
 
-    public int getPort() {
-        return port;
-    }
-
-    public Map<String, String> getUsers() {
-        return users;
-    }
-
-    public List<FileSystemResource> getResources() {
-        return resources;
-    }
-
-    public Path getAuthorizedKeys() {
-        return authorizedKeys;
-    }
-
-    public KeyPairProvider getKeyPairProvider() {
-        return keyPairProvider;
+    @Override
+    public EmbeddedSftpServer build() {
+        return new LifecycleAwareEmbeddedSftpServer(this);
     }
 
     public boolean noAuthenticationDefined() {
         return authorizedKeys == null && users.isEmpty();
     }
+
 }

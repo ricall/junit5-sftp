@@ -23,8 +23,8 @@
 
 package org.github.ricall.junit5.sftp.implementation;
 
-import org.github.ricall.junit5.sftp.api.FileSystemResource;
-import org.github.ricall.junit5.sftp.api.FileSystemResource.FileSystemResourceBuilder;
+import org.github.ricall.junit5.sftp.FileSystemResource;
+import org.github.ricall.junit5.sftp.FileSystemResource.FileSystemResourceBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

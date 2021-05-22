@@ -22,6 +22,6 @@
  */
 
 /**
- * Implementation classes for SftpEmbeddedServer.
+ * Implementation classes for EmbeddedSftpServer.
  */
 package org.github.ricall.junit5.sftp.implementation;

@@ -9,7 +9,7 @@ plugins {
 }
 
 group 'io.github.ricall.junit5-sftp'
-version '1.2.2'
+version '2.0.0'
 
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -22,6 +22,8 @@ repositories {
 }
 
 dependencies {
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     implementation "org.apache.sshd:sshd-core:$sshdVersion"
     implementation "org.apache.sshd:sshd-sftp:$sshdVersion"
     implementation "com.github.marschall:memoryfilesystem:$memoryfilesystemVersion"
